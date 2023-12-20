@@ -7,6 +7,7 @@ stop:
 
 generate_data:
 	bash ./scripts/generate_data.sh ${SCALE_FACTOR}
-	# mkdir -p ./data/sf${SCALE_FACTOR}
-	# chmod +w ./data/sf${SCALE_FACTOR}
-	# docker exec POSTGRES bash /home/workspace/scripts/generate_data.sh ${SCALE_FACTOR}
+
+create_schemas:
+	docker exec POSTGRES psql -U postgres -q -f /home/workspace/src/sql/create_staging_schema.sql
+	docker exec POSTGRES psql -U postgres -q -f /home/workspace/src/sql/create_master_schema.sql
