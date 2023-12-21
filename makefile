@@ -19,8 +19,13 @@ generate_data:
 	chmod -R 777 ./data/
 
 historical_load:
-	docker exec AIRFLOW airflow dags unpause dw_sf_3
-	docker exec AIRFLOW airflow dags trigger dw_sf_3
+	docker exec AIRFLOW airflow dags unpause dw_dag
+	docker exec AIRFLOW airflow dags trigger dw_dag
+
+set_scale_factor:
+	cd data/
+	rm -f sf_current
+	ln -s sf${SCALE_FACTOR} sf_current
 
 psql:
 	docker exec -it POSTGRES psql -U postgres -d tpc_di

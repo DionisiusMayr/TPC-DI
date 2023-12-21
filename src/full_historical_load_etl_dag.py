@@ -21,7 +21,7 @@ default_args = {
 
 # Create dag
 dag_psql = DAG(
-    dag_id = "dw_sf_3",
+    dag_id = "dw_dag",
     default_args = default_args,
     #dagrun_timeout = timedelta(minutes=60),
     #description = 'TPC-DI project',
