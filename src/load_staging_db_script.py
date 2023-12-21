@@ -55,7 +55,6 @@ cur = connect_postgres(db_host, db_port, db_user, db_pass, db_name)
 # drop tables if exists in db
 cur.execute(
     """
-    
     TRUNCATE TABLE staging.audit;
     TRUNCATE TABLE staging.batchdate;
     TRUNCATE TABLE staging.cashtransaction;
@@ -77,8 +76,6 @@ cur.execute(
     TRUNCATE TABLE staging.tradehistory;
     TRUNCATE TABLE staging.tradetype;
     TRUNCATE TABLE staging.watchhistory;
-    
-    
     """
 )
 print("SQL Status Output:\n", cur.statusmessage)

@@ -6,7 +6,7 @@ start:
 	sleep 2
 	docker exec AIRFLOW /usr/local/bin/pip install xmltodict
 	docker exec AIRFLOW airflow users create --role Admin --username tpcdi --email tpcdi --firstname tpcdi --lastname tpcdi --password tpcdi
-	docker exec AIRFLOW airflow connections add 'pg_conn' --conn-type 'postgres' --conn-login 'postgres' --conn-password '' --conn-host 'localhost' --conn-port '5432'
+	docker exec AIRFLOW airflow connections add 'pg_conn' --conn-type 'postgres' --conn-login 'postgres' --conn-password '' --conn-host 'localhost' --conn-port '5432' --conn-schema 'tpc_di'
 
 stop:
 	docker stop POSTGRES
