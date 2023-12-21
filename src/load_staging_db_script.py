@@ -87,8 +87,8 @@ print("Staging DB tables populated")
 # %%
 sql_commands_file = open('staging_finwire_load1.sql','w')
 
-# path = os.getcwd() + '/sf3/Batch1'
-path = '/home/workspace/data/sf3/Batch1'
+# path = os.getcwd() + '/sf_current/Batch1'
+path = '/home/workspace/data/sf_current/Batch1'
 
 files = [f for f in os.listdir(path) if not f.startswith('.')]
 

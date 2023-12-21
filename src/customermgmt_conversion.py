@@ -7,15 +7,15 @@ import xmltodict
 import json
 
 def customermgmt_convert():
-    with open('/home/workspace/data/sf3/Batch1/CustomerMgmt.xml') as fd:
+    with open('/home/workspace/data/sf_current/Batch1/CustomerMgmt.xml') as fd:
         doc = xmltodict.parse(fd.read()) 
         fd.close()
 
-    with open("/home/workspace/data/sf3/Batch1/CustomerData.json", "w") as outfile:
+    with open("/home/workspace/data/sf_current/Batch1/CustomerData.json", "w") as outfile:
         outfile.write(json.dumps(doc))
         outfile.close()
 
-    f = open('/home/workspace/data/sf3/Batch1/CustomerData.json','r')
+    f = open('/home/workspace/data/sf_current/Batch1/CustomerData.json','r')
 
     cust = json.load(f)
     actions = cust['TPCDI:Actions']
@@ -131,5 +131,5 @@ def customermgmt_convert():
 
     cust_df.replace(to_replace = np.NaN, value = "", inplace = True)
     cust_df.replace(to_replace = "None", value = "", inplace = True)
-    cust_df.to_csv('/home/workspace/data/sf3/Batch1/CustomerMgmt.csv', index = False)
+    cust_df.to_csv('/home/workspace/data/sf_current/Batch1/CustomerMgmt.csv', index = False)
     print('Customer Management data converted from XML to CSV')
