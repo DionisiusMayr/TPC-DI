@@ -18,8 +18,12 @@
 
 -- SELECT * FROM staging.audit LIMIT 50;
 -- SELECT * FROM master.audit LIMIT 50;
---
+
+-- The following commands have no impact on the stored data, but they speed up greatly the Audit queries.
+CREATE INDEX IF NOT EXISTS idx_master_FactWatches_SK_DateID_DatePlaced ON master.FactWatches USING btree (SK_DateID_DatePlaced);
+CREATE INDEX IF NOT EXISTS idx_master_DimDate_SK_DateID ON master.DimDate USING btree (SK_DateID);
 VACUUM ANALYZE;
+SET random_page_cost = 1.1;
 
 select * from (
 
@@ -826,24 +830,25 @@ select 'FactWatches active watches', BatchID, Result, 'Actual total matches Audi
 	from master.Audit a where BatchID in (1, 2, 3)
 ) o
 
--- union
--- select 'FactWatches SK_CustomerID', NULL, case when
--- 	(select count(*) from master.FactWatches) =
--- 	(select count(*) from master.FactWatches a
--- 	 join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID
--- 	  and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced)
--- 	  and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced) <= c.EndDate )
--- then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
+union
+select 'FactWatches SK_CustomerID', NULL, case when
+	(select count(*) from master.FactWatches) =
+	(select count(*) from master.FactWatches a
+	 join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID
+	  and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced)
+	  and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced) <= c.EndDate
+	  )
+then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
  -- FROM DUMMY TABLE
 
--- union
--- select 'FactWatches SK_SecurityID', NULL, case when
--- 	(select count(*) from master.FactWatches) =
--- 	(select count(*) from master.FactWatches a
--- 	 join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID
--- 	  and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced)
--- 	  and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced) <= c.EndDate )
--- then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
+union
+select 'FactWatches SK_SecurityID', NULL, case when
+	(select count(*) from master.FactWatches) =
+	(select count(*) from master.FactWatches a
+	 join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID
+	  and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced)
+	  and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID_DatePlaced) <= c.EndDate )
+then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
  -- FROM DUMMY TABLE
 
 union
@@ -926,44 +931,44 @@ select 'DimTrade distinct keys', NULL, case when
 then 'OK' else 'Not unique' end, 'All keys are distinct'
  -- FROM DUMMY TABLE
 
--- union
--- select 'DimTrade SK_BrokerID', NULL, case when
--- 	(select count(*) from master.DimTrade) =
--- 	(select count(*) from master.DimTrade a
--- 	 join master.DimBroker c on a.SK_BrokerID = c.SK_BrokerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_BrokerIDs match a DimBroker record with a valid date range'
+union
+select 'DimTrade SK_BrokerID', NULL, case when
+	(select count(*) from master.DimTrade) =
+	(select count(*) from master.DimTrade a
+	 join master.DimBroker c on a.SK_BrokerID = c.SK_BrokerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_BrokerIDs match a DimBroker record with a valid date range'
  -- FROM DUMMY TABLE
 
--- union
--- select 'DimTrade SK_CompanyID', NULL, case when
--- 	(select count(*) from master.DimTrade) =
--- 	(select count(*) from master.DimTrade a
--- 	 join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
+union
+select 'DimTrade SK_CompanyID', NULL, case when
+	(select count(*) from master.DimTrade) =
+	(select count(*) from master.DimTrade a
+	 join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
  -- FROM DUMMY TABLE
 
--- union
--- select 'DimTrade SK_SecurityID', NULL, case when
--- 	(select count(*) from master.DimTrade) =
--- 	(select count(*) from master.DimTrade a
--- 	 join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
+union
+select 'DimTrade SK_SecurityID', NULL, case when
+	(select count(*) from master.DimTrade) =
+	(select count(*) from master.DimTrade a
+	 join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
  -- FROM DUMMY TABLE
 
--- union
--- select 'DimTrade SK_CustomerID', NULL, case when
--- 	(select count(*) from master.DimTrade) =
--- 	(select count(*) from master.DimTrade a
--- 	 join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
+union
+select 'DimTrade SK_CustomerID', NULL, case when
+	(select count(*) from master.DimTrade) =
+	(select count(*) from master.DimTrade a
+	 join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
  -- FROM DUMMY TABLE
 
--- union
--- select 'DimTrade SK_AccountID', NULL, case when
--- 	(select count(*) from master.DimTrade) =
--- 	(select count(*) from master.DimTrade a
--- 	 join master.DimAccount c on a.SK_AccountID = c.SK_AccountID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
+union
+select 'DimTrade SK_AccountID', NULL, case when
+	(select count(*) from master.DimTrade) =
+	(select count(*) from master.DimTrade a
+	 join master.DimAccount c on a.SK_AccountID = c.SK_AccountID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_CreateDateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
  -- FROM DUMMY TABLE
 
 union
@@ -1099,18 +1104,18 @@ then 'OK' else 'Mismatch' end, 'BatchID values must match Audit table'
 -- FROM DUMMY TABLE
 
 -- Very slow procedure ahead:
--- union
--- select 'FactMarketHistory SK_CompanyID', NULL, case when
--- 	(select count(*) from master.FactMarketHistory) =
--- 	(select count(*) from master.FactMarketHistory a join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
+union
+select 'FactMarketHistory SK_CompanyID', NULL, case when
+	(select count(*) from master.FactMarketHistory) =
+	(select count(*) from master.FactMarketHistory a join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
 -- -- FROM DUMMY TABLE
 --
--- union
--- select 'FactMarketHistory SK_SecurityID', NULL, case when
--- 	(select count(*) from master.FactMarketHistory) =
--- 	(select count(*) from master.FactMarketHistory a join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
+union
+select 'FactMarketHistory SK_SecurityID', NULL, case when
+	(select count(*) from master.FactMarketHistory) =
+	(select count(*) from master.FactMarketHistory a join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
 -- -- FROM DUMMY TABLE
 --
 union
@@ -1160,39 +1165,39 @@ select 'FactHoldings batches', NULL, case when
 then 'OK' else 'Mismatch' end, 'BatchID values must match Audit table'
 -- FROM DUMMY TABLE
 
--- union
--- /* It is possible that the dimension record has changed between orgination of the trade and the completion of the trade. *
---  * So, we can check that the Effective Date of the dimension record is older than the the completion date, but the end date could be earlier or later than the completion date
---  */
--- select 'FactHoldings SK_CustomerID', NULL, case when
--- 	(select count(*) from master.FactHoldings) =
--- 	(select count(*) from master.FactHoldings a join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
---        )
--- then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
+union
+/* It is possible that the dimension record has changed between orgination of the trade and the completion of the trade. *
+ * So, we can check that the Effective Date of the dimension record is older than the the completion date, but the end date could be earlier or later than the completion date
+ */
+select 'FactHoldings SK_CustomerID', NULL, case when
+	(select count(*) from master.FactHoldings) =
+	(select count(*) from master.FactHoldings a join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
+       )
+then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
 -- FROM DUMMY TABLE
 
--- union
--- select 'FactHoldings SK_AccountID', NULL, case when
--- 	(select count(*) from master.FactHoldings) =
--- 	(select count(*) from master.FactHoldings a join master.DimAccount c on a.SK_AccountID = c.SK_AccountID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
---        )
--- then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
+union
+select 'FactHoldings SK_AccountID', NULL, case when
+	(select count(*) from master.FactHoldings) =
+	(select count(*) from master.FactHoldings a join master.DimAccount c on a.SK_AccountID = c.SK_AccountID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
+       )
+then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
 -- FROM DUMMY TABLE
 
--- union
--- select 'FactHoldings SK_CompanyID', NULL, case when
--- 	(select count(*) from master.FactHoldings) =
--- 	(select count(*) from master.FactHoldings a join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
---        )
--- then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
+union
+select 'FactHoldings SK_CompanyID', NULL, case when
+	(select count(*) from master.FactHoldings) =
+	(select count(*) from master.FactHoldings a join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
+       )
+then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
 -- FROM DUMMY TABLE
 
--- union
--- select 'FactHoldings SK_SecurityID', NULL, case when
--- 	(select count(*) from master.FactHoldings) =
--- 	(select count(*) from master.FactHoldings a join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
---        )
--- then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
+union
+select 'FactHoldings SK_SecurityID', NULL, case when
+	(select count(*) from master.FactHoldings) =
+	(select count(*) from master.FactHoldings a join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID)
+       )
+then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
 -- FROM DUMMY TABLE
 
 union
@@ -1224,18 +1229,18 @@ select 'FactCashBalances batches', NULL, case when
 then 'OK' else 'Mismatch' end, 'BatchID values must match Audit table'
 -- FROM DUMMY TABLE
 
--- union
--- select 'FactCashBalances SK_CustomerID', NULL, case when
--- 	(select count(*) from master.FactCashBalances) =
--- 	(select count(*) from master.FactCashBalances a join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
+union
+select 'FactCashBalances SK_CustomerID', NULL, case when
+	(select count(*) from master.FactCashBalances) =
+	(select count(*) from master.FactCashBalances a join master.DimCustomer c on a.SK_CustomerID = c.SK_CustomerID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_CustomerIDs match a DimCustomer record with a valid date range'
 -- FROM DUMMY TABLE
 
--- union
--- select 'FactCashBalances SK_AccountID', NULL, case when
--- 	(select count(*) from master.FactCashBalances) =
--- 	(select count(*) from master.FactCashBalances a join master.DimAccount c on a.SK_AccountID = c.SK_AccountID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
--- then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
+union
+select 'FactCashBalances SK_AccountID', NULL, case when
+	(select count(*) from master.FactCashBalances) =
+	(select count(*) from master.FactCashBalances a join master.DimAccount c on a.SK_AccountID = c.SK_AccountID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
+then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
 -- FROM DUMMY TABLE
 
 union
