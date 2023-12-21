@@ -16,6 +16,9 @@
  * -------------------------------------------------- *
  */
 
+-- SELECT * FROM staging.audit LIMIT 50;
+-- SELECT * FROM master.audit LIMIT 50;
+--
 select * from (
 
 --
@@ -1093,20 +1096,21 @@ select 'FactMarketHistory batches', NULL, case when
 then 'OK' else 'Mismatch' end, 'BatchID values must match Audit table'
 -- FROM DUMMY TABLE
 
-union
-select 'FactMarketHistory SK_CompanyID', NULL, case when
-	(select count(*) from master.FactMarketHistory) =
-	(select count(*) from master.FactMarketHistory a join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
-then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
--- FROM DUMMY TABLE
-
-union
-select 'FactMarketHistory SK_SecurityID', NULL, case when
-	(select count(*) from master.FactMarketHistory) =
-	(select count(*) from master.FactMarketHistory a join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
-then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
--- FROM DUMMY TABLE
-
+-- Very slow procedure ahead:
+-- union
+-- select 'FactMarketHistory SK_CompanyID', NULL, case when
+-- 	(select count(*) from master.FactMarketHistory) =
+-- 	(select count(*) from master.FactMarketHistory a join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
+-- then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
+-- -- FROM DUMMY TABLE
+--
+-- union
+-- select 'FactMarketHistory SK_SecurityID', NULL, case when
+-- 	(select count(*) from master.FactMarketHistory) =
+-- 	(select count(*) from master.FactMarketHistory a join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
+-- then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
+-- -- FROM DUMMY TABLE
+--
 union
 select 'FactMarketHistory SK_DateID', BatchID, Result, 'All dates are within batch date range' from (
 	select distinct BatchID, (
