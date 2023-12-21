@@ -18,7 +18,7 @@ generate_data:
 	bash ./scripts/generate_data.sh ${SCALE_FACTOR}
 	chmod -R 777 ./data/
 
-historical_loading:
+historical_load:
 	docker exec AIRFLOW airflow dags unpause dw_sf_3
 	docker exec AIRFLOW airflow dags trigger dw_sf_3
 
