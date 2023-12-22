@@ -1,5 +1,4 @@
 -- factcashbalances
-truncate table master.factcashbalances;
 insert into master.factcashbalances
 	with agg as (
 		select 
