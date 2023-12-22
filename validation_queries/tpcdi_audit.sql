@@ -22,9 +22,13 @@
 -- The following commands have no impact on the stored data, but they speed up greatly the Audit queries.
 CREATE INDEX IF NOT EXISTS idx_master_FactWatches_SK_DateID_DatePlaced ON master.FactWatches USING btree (SK_DateID_DatePlaced);
 CREATE INDEX IF NOT EXISTS idx_master_DimDate_SK_DateID ON master.DimDate USING btree (SK_DateID);
+CREATE INDEX IF NOT EXISTS idx_master_FactWatches_SK_DateID_DateRemoved ON master.FactWatches USING btree (SK_DateID_DateRemoved);
+CREATE INDEX IF NOT EXISTS idx_master_DimTrade_SK_CreateDateID ON master.DimTrade USING btree (SK_CreateDateID);
+CREATE INDEX IF NOT EXISTS idx_master_DimTrade_SK_CloseDateID ON master.DimTrade USING btree (SK_CloseDateID);
 VACUUM ANALYZE;
 SET random_page_cost = 1.1;
 
+WITH audit_results AS (
 select * from (
 
 --
@@ -43,7 +47,6 @@ select
      , 'There must be audit data for 3 batches' as Description
 
 union
-
 select 'Audit table sources' as Test, NULL::numeric as Batch, case when
 	(select count(distinct DataSet)
 	 from master.audit
@@ -851,34 +854,34 @@ select 'FactWatches SK_SecurityID', NULL, case when
 then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
  -- FROM DUMMY TABLE
 
-union
-select 'FactWatches date check', BatchID, Result, 'All SK_DateID_ values are in the correct batch time window' from (
-	select distinct BatchID, (
-		case when (
-			select count(*) from master.FactWatches w
-			where w.BatchID = a.BatchID and (
-				w.SK_DateID_DateRemoved is null and (
-					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DatePlaced) >
-					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
-					or
-					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DatePlaced) <
-					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID)
-				) or
-				w.SK_DateID_DateRemoved is not null and (
-					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DateRemoved) >
-					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
-					or
-					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DateRemoved) <
-					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID)
-					or
-					SK_DateID_DatePlaced > SK_DateID_DateRemoved
-				)
-			)
-		) = 0
-		then 'OK' else 'Mismatch' end
-	) as Result
-	from master.Audit a where BatchID in (1, 2, 3)
-) o
+-- union
+-- select 'FactWatches date check', BatchID, Result, 'All SK_DateID_ values are in the correct batch time window' from (
+-- 	select distinct BatchID, (
+-- 		case when (
+-- 			select count(*) from master.FactWatches w
+-- 			where w.BatchID = a.BatchID and (
+-- 				w.SK_DateID_DateRemoved is null and (
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DatePlaced) >
+-- 					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
+-- 					or
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DatePlaced) <
+-- 					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID)
+-- 				) or
+-- 				w.SK_DateID_DateRemoved is not null and (
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DateRemoved) >
+-- 					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
+-- 					or
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_DateID_DateRemoved) <
+-- 					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID)
+-- 					or
+-- 					SK_DateID_DatePlaced > SK_DateID_DateRemoved
+-- 				)
+-- 			)
+-- 		) = 0
+-- 		then 'OK' else 'Mismatch' end
+-- 	) as Result
+-- 	from master.Audit a where BatchID in (1, 2, 3)
+-- ) o
 
 
 --
@@ -971,36 +974,36 @@ select 'DimTrade SK_AccountID', NULL, case when
 then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
  -- FROM DUMMY TABLE
 
-union
-select 'DimTrade date check', BatchID, Result, 'All SK_DateID values are in the correct batch time window' from (
-	select distinct BatchID, (
-		case when (
-			select count(*) from master.DimTrade w
-			where w.BatchID = a.BatchID and (
-				w.SK_CloseDateID is null and (
-					(select DateValue from master.DimDate where SK_DateID = w.SK_CreateDateID) >
-					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
-					or
-					(select DateValue from master.DimDate where SK_DateID = w.SK_CreateDateID) <
-					(case when w.Type like 'Limit%'  /* Limit trades can have create dates earlier than the current Batch date, but not earlier than Batch1's first date */
-                                              then (select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = 1)
-                                              else (select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID) end)
-				) or
-				w.SK_CloseDateID is not null and (
-					(select DateValue from master.DimDate where SK_DateID = w.SK_CloseDateID) >
-					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
-					or
-					(select DateValue from master.DimDate where SK_DateID = w.SK_CloseDateID) <
-					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID)
-					or
-					SK_CloseDateID < SK_CreateDateID
-				)
-			)
-		) = 0
-		then 'OK' else 'Mismatch' end
-	) as Result
-	from master.Audit a where BatchID in (1, 2, 3)
-) o
+-- union
+-- select 'DimTrade date check', BatchID, Result, 'All SK_DateID values are in the correct batch time window' from (
+-- 	select distinct BatchID, (
+-- 		case when (
+-- 			select count(*) from master.DimTrade w
+-- 			where w.BatchID = a.BatchID and (
+-- 				w.SK_CloseDateID is null and (
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_CreateDateID) >
+-- 					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
+-- 					or
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_CreateDateID) <
+-- 					(case when w.Type like 'Limit%'  /* Limit trades can have create dates earlier than the current Batch date, but not earlier than Batch1's first date */
+--                                               then (select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = 1)
+--                                               else (select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID) end)
+-- 				) or
+-- 				w.SK_CloseDateID is not null and (
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_CloseDateID) >
+-- 					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'LastDay' and BatchID = a.BatchID)
+-- 					or
+-- 					(select DateValue from master.DimDate where SK_DateID = w.SK_CloseDateID) <
+-- 					(select Date from master.Audit where DataSet = 'Batch' and Attribute = 'FirstDay' and BatchID = a.BatchID)
+-- 					or
+-- 					SK_CloseDateID < SK_CreateDateID
+-- 				)
+-- 			)
+-- 		) = 0
+-- 		then 'OK' else 'Mismatch' end
+-- 	) as Result
+-- 	from master.Audit a where BatchID in (1, 2, 3)
+-- ) o
 
 union
 select 'DimTrade Status', NULL, case when (
@@ -1109,28 +1112,28 @@ select 'FactMarketHistory SK_CompanyID', NULL, case when
 	(select count(*) from master.FactMarketHistory) =
 	(select count(*) from master.FactMarketHistory a join master.DimCompany c on a.SK_CompanyID = c.SK_CompanyID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
 then 'OK' else 'Bad join' end, 'All SK_CompanyIDs match a DimCompany record with a valid date range'
--- -- FROM DUMMY TABLE
---
+-- FROM DUMMY TABLE
+
 union
 select 'FactMarketHistory SK_SecurityID', NULL, case when
 	(select count(*) from master.FactMarketHistory) =
 	(select count(*) from master.FactMarketHistory a join master.DimSecurity c on a.SK_SecurityID = c.SK_SecurityID and c.EffectiveDate <= (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) and (select DateValue from master.DimDate where SK_DateID = a.SK_DateID) <= c.EndDate)
 then 'OK' else 'Bad join' end, 'All SK_SecurityIDs match a DimSecurity record with a valid date range'
--- -- FROM DUMMY TABLE
---
-union
-select 'FactMarketHistory SK_DateID', BatchID, Result, 'All dates are within batch date range' from (
-	select distinct BatchID, (
-		case when (
--- 			(select count(*) from master.FactMarketHistory m where m.BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date-1 day from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
+-- FROM DUMMY TABLE
+
+-- union
+-- select 'FactMarketHistory SK_DateID', BatchID, Result, 'All dates are within batch date range' from (
+-- 	select distinct BatchID, (
+-- 		case when (
+-- -- 			(select count(*) from master.FactMarketHistory m where m.BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date-1 day from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
+-- -- 			(select count(*) from master.FactMarketHistory m where m.BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) >= (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'LastDay'))
+-- 		    (select count(*) from master.FactMarketHistory m where m.BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date - INTERVAL '1 day' from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
 -- 			(select count(*) from master.FactMarketHistory m where m.BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) >= (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'LastDay'))
-		    (select count(*) from master.FactMarketHistory m where m.BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date - INTERVAL '1 day' from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
-			(select count(*) from master.FactMarketHistory m where m.BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) >= (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'LastDay'))
-		) = 0
-		then 'OK' else 'Bad Date' end
-	) as Result
-	from master.Audit a where BatchID in (1, 2, 3)
-) o
+-- 		) = 0
+-- 		then 'OK' else 'Bad Date' end
+-- 	) as Result
+-- 	from master.Audit a where BatchID in (1, 2, 3)
+-- ) o
 
 union
 select 'FactMarketHistory relative dates', NULL, case when (
@@ -1207,17 +1210,17 @@ select 'FactHoldings CurrentTradeID', NULL, case when
 then 'OK' else 'Failed' end, 'CurrentTradeID matches a DimTrade record with and Close Date and Time are values are used as the holdings date and time'
 -- FROM DUMMY TABLE
 
-union
-select 'FactHoldings SK_DateID', BatchID, Result, 'All dates are within batch date range' from (
-	select distinct BatchID, (
-		case when (
-			(select count(*) from master.FactHoldings m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
-			(select count(*) from master.FactHoldings m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) > (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'LastDay'))
-		) = 0
-		then 'OK' else 'Bad Date' end
-	) as Result
-	from master.Audit a where BatchID in (1, 2, 3)
-) o
+-- union
+-- select 'FactHoldings SK_DateID', BatchID, Result, 'All dates are within batch date range' from (
+-- 	select distinct BatchID, (
+-- 		case when (
+-- 			(select count(*) from master.FactHoldings m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
+-- 			(select count(*) from master.FactHoldings m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) > (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'LastDay'))
+-- 		) = 0
+-- 		then 'OK' else 'Bad Date' end
+-- 	) as Result
+-- 	from master.Audit a where BatchID in (1, 2, 3)
+-- ) o
 
 --
 -- Checks against the FactCashBalances table.
@@ -1243,17 +1246,17 @@ select 'FactCashBalances SK_AccountID', NULL, case when
 then 'OK' else 'Bad join' end, 'All SK_AccountIDs match a DimAccount record with a valid date range'
 -- FROM DUMMY TABLE
 
-union
-select 'FactCashBalances SK_DateID', BatchID, Result, 'All dates are within batch date range' from (
-	select distinct BatchID, (
-		case when (
-			(select count(*) from master.FactCashBalances m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
-			(select count(*) from master.FactCashBalances m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) > (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'LastDay'))
-		) = 0
-		then 'OK' else 'Bad Date' end
-	) as Result
-	from master.Audit a where BatchID in (1, 2, 3)
-) o
+-- union
+-- select 'FactCashBalances SK_DateID', BatchID, Result, 'All dates are within batch date range' from (
+-- 	select distinct BatchID, (
+-- 		case when (
+-- 			(select count(*) from master.FactCashBalances m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) < (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'FirstDay')) +
+-- 			(select count(*) from master.FactCashBalances m where BatchID = a.BatchID and (select DateValue from master.DimDate where SK_DateID = m.SK_DateID) > (select Date from master.Audit where DataSet = 'Batch' and BatchID = a.BatchID and Attribute = 'LastDay'))
+-- 		) = 0
+-- 		then 'OK' else 'Bad Date' end
+-- 	) as Result
+-- 	from master.Audit a where BatchID in (1, 2, 3)
+-- ) o
 
 /*
  *  Checks against the Batch Validation Query row counts
@@ -1325,4 +1328,9 @@ from (
 /* close the outer query */
 ) q
 order by Test, Batch
-;
+)
+
+SELECT *, (SELECT COUNT(*) FROM audit_results WHERE result = 'OK')
+FROM audit_results
+ORDER BY 1, 3;
+

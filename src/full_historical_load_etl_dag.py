@@ -7,6 +7,7 @@ from airflow import DAG
 from airflow.models.connection import Connection
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.bash import BashOperator
 from airflow.decorators import task
 from customermgmt_conversion import customermgmt_convert
 
@@ -28,6 +29,19 @@ dag_psql = DAG(
     #schedule = None,
     schedule_interval = None,
     # catchup = False
+)
+
+create_audit_file = BashOperator(
+    task_id = 'create_audit_file',
+    bash_command = "cat /home/workspace/data/sf_current/Batch1/*_audit.csv /home/workspace/data/sf_current/Batch1_audit.csv /home/workspace/data/sf_current/Generator_audit.csv > /home/workspace/data/sf_current/Batch1/audit_complete.csv && sed -i '/DataSet, BatchID ,Date , Attribute , Value, DValue/d' /home/workspace/data/sf_current/Batch1/audit_complete.csv",
+    dag = dag_psql
+)
+
+load_audit = PostgresOperator(
+    task_id = "load_audit",
+    postgres_conn_id = "pg_conn",
+    sql = "load_audit.sql",
+    dag = dag_psql
 )
 
 # Task1 - Create staging schema
@@ -273,6 +287,8 @@ load_master_dimessages_factmarkethistory = PostgresOperator(
 # Task Dependencies
 
 # Staging schema dependency
+create_audit_file >> load_audit
+create_master_schema >> load_audit
 create_staging_schema >> load_txt_csv_sources_to_staging
 create_staging_schema >> load_finwire_to_staging >> parse_finwire
 create_staging_schema >> convert_customermgmt_xml_to_csv >> load_customer_mgmt_to_staging

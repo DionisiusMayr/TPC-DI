@@ -311,7 +311,7 @@ create table master.audit(
 	date date,
 	attribute char(50) not null,
 	value numeric(15),
-	dvalue numeric(15, 5)
+	dvalue numeric(20, 5)
 );
 
 drop table if exists master.dimessages;
