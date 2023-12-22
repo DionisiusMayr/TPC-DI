@@ -1,5 +1,4 @@
 -- factholdings
-truncate table master.factholdings;
 insert into master.factholdings 
 	select
 	h.hh_h_t_id as tradeid,
