@@ -56,13 +56,6 @@ tl_master_dimcustomer = PostgresOperator(
     dag = dag_incremental_update
 )
 
-tl_master_dimtrade = PostgresOperator(
-    task_id = "tl_master_dimtrade",
-    postgres_conn_id = "pg_conn",
-    sql = "incremental_update/tl_master_dimtrade.sql",
-    dag = dag_incremental_update
-)
-
 tl_master_factcashbalances = PostgresOperator(
     task_id = "tl_master_factcashbalances",
     postgres_conn_id = "pg_conn",
@@ -102,7 +95,6 @@ create_schema_staging >> truncate_staging
 truncate_staging >> load_staging
 load_staging >> tl_master_dimaccount
 load_staging >> tl_master_dimcustomer
-load_staging >> tl_master_dimtrade
 load_staging >> tl_master_factcashbalances
 load_staging >> tl_master_dimtrade >> tl_master_factholdings
 load_staging >> tl_master_factmarkethistory
