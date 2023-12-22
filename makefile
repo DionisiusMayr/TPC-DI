@@ -22,6 +22,10 @@ historical_load:
 	docker exec AIRFLOW airflow dags unpause dw_dag
 	docker exec AIRFLOW airflow dags trigger dw_dag
 
+incremental_load:
+	docker exec AIRFLOW airflow dags unpause dag_incremental_update
+	docker exec AIRFLOW airflow dags trigger dag_incremental_update
+
 set_scale_factor:
 	cd data/
 	rm -f sf_current
