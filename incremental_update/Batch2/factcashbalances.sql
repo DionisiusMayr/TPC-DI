@@ -11,7 +11,7 @@ insert into master.factcashbalances
 			master.dimaccount a,
 			master.dimdate d
 		where c.ct_ca_id = a.accountid
-    and a.iscurrent= 1
+    and a.iscurrent= True
     and TO_DATE(d.sk_dateid::text, 'YYYYMMDD')= (SELECT batchdate from staging.batchdate); 
 		group by 
 			a.sk_customerid,
