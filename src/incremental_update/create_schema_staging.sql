@@ -59,3 +59,52 @@ create table staging.trade_b2(
 	t_comm numeric(10,2) check((t_st_id = 'CMPT' and t_comm >= 0) or (t_st_id != 'CMPT' and t_comm is null)),
 	t_tax numeric(10,2) check((t_st_id = 'CMPT' and t_tax >= 0) or (t_st_id != 'CMPT' and t_tax is null))
 );
+
+drop table if exists staging.customer;
+create table staging.customer(
+    cdc_flag char(1),
+    cdc_dsn numeric(12) not null,
+	c_id numeric(15) not null,
+    c_tax_id char(20) not null,
+    c_st_id char(4),
+    c_l_name char(25) not null,
+    c_f_name char(20) not null,
+    c_m_name char(1),
+    c_gndr char(1),
+    c_tier numeric(1),
+    c_dob date not null,
+    c_adline1 char(80) not null,
+    c_adline2 char(80),
+    c_zipcode char(12) not null,
+    c_city char(25) not null,
+    c_state_prov char(20) not null,
+    c_ctry char(24),
+    c_ctry_1 char(3),
+    c_area_1 char(3),
+    c_local_1 char(10),
+    c_ext_1 char(5),
+    c_ctry_2 char(3),
+    c_area_2 char(3),
+    c_local_2 char(10),
+    c_ext_2 char(5),
+    c_ctry_3 char(3),
+    c_area_3 char(3),
+    c_local_3 char(10),
+    c_ext_3 char(5),
+    c_email_1 char(50),
+    c_email_2 char(50),
+    c_lcl_tx_id char(4) not null,
+    c_nat_tx_id char(4) not null
+);
+
+drop table if exists staging.account;
+create table staging.account(
+    cdc_flag char(1),
+    cdc_dsn numeric(12) not null,
+    ca_id numeric(15) not null,
+    ca_b_id numeric(15) not null,
+    ca_c_id numeric(15) not null,
+    ca_name char(50),
+    ca_tax_st numeric(1),
+    ca_st_id char(4)
+);

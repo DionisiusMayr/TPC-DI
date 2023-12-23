@@ -84,19 +84,34 @@ tl_master_factwatches = PostgresOperator(
     dag = dag_incremental_update
 )
 
-tl_master_prospect = PostgresOperator(
-    task_id = "tl_master_prospect",
+prospect = PostgresOperator(
+    task_id = "prospect",
     postgres_conn_id = "pg_conn",
-    sql = "incremental_update/tl_master_prospect.sql",
+    sql = "incremental_update/prospect.sql",
+    dag = dag_incremental_update
+)
+
+update_prospect = PostgresOperator(
+    task_id = "update_prospect",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/update_prospect.sql",
+    dag = dag_incremental_update
+)
+
+load_prospect_status_dimessages = PostgresOperator(
+    task_id = "load_prospect_status_dimessages",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/load_prospect_status_dimessages.sql",
     dag = dag_incremental_update
 )
 
 create_schema_staging >> truncate_staging
 truncate_staging >> load_staging
-load_staging >> tl_master_dimaccount
-load_staging >> tl_master_dimcustomer
-load_staging >> tl_master_factcashbalances
-load_staging >> tl_master_dimtrade >> tl_master_factholdings
-load_staging >> tl_master_factmarkethistory
-load_staging >> tl_master_factwatches
-load_staging >> tl_master_prospect
+load_staging >> tl_master_dimcustomer >> tl_master_dimaccount >> tl_master_dimtrade
+tl_master_dimtrade >> tl_master_factholdings
+tl_master_dimtrade >> tl_master_factmarkethistory
+tl_master_dimtrade >> tl_master_factwatches
+tl_master_dimtrade >> tl_master_factcashbalances
+
+load_staging >> prospect >> update_prospect >> load_prospect_status_dimessages
+
