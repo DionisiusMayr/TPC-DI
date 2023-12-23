@@ -29,6 +29,3 @@ insert into master.factwatches
   and s.iscurrent= True
 	and w.dateplaced = d1.datevalue
 	and w.dateremoved = d2.datevalue;
-
-UPDATE master.factwatches
-SET sk_dateid_dateremoved = NULL;
