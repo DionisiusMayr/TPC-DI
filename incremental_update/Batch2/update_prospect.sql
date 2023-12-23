@@ -93,8 +93,6 @@ set sk_updatedateid =
         )
         THEN batchdate
         ELSE sk_updatedateid
-    END
-FROM master.dimdate
-WHERE master.dimdate.sk_dateid = prospect.sk_updatedateid;
+    END;
 
 RETURNING count(*) into update_rows_count;
