@@ -44,7 +44,7 @@ with date_record_id as (
 	, nullif(btrim(btrim(btrim(btrim(btrim(
 	  case
 		when p.networth > 1000000 or p.income > 200000
-		then 'HighValue'date_record_id
+		then 'HighValue'
 		else ''
 	  end
 	  || '+' ||
