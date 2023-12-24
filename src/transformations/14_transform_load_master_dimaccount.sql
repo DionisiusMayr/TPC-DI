@@ -9,8 +9,8 @@ insert into master.dimaccount
 		, c.sk_customerid
 		, case
 			when cm.actiontype in ('NEW', 'ADDACCT', 'UPDACCT', 'UPDCUST')
-			then 'ACTIVE'
-			else 'INACTIVE'
+			then 'Active'
+			else 'Inactive'
 		  end as status
 		, cm.ca_name
 		, cm.ca_tax_st
@@ -21,7 +21,11 @@ insert into master.dimaccount
 		  end as iscurrent
 		, 1 as batchid
 		, cm.actionts::date as effectivedate
-		, '9999-12-31'::date as enddate
+		, case 
+			when lead( cm.actionts ) over ( partition by cm.ca_id order by cm.actionts asc ) is null 
+			then '9999-12-31'::date  
+			else lead( cm.actionts ) over ( partition by cm.ca_id order by cm.actionts asc )::date 
+		end as enddate		
 		, cm.actiontype
 		from staging.customermgmt cm
 		cross join staging.batchdate bd

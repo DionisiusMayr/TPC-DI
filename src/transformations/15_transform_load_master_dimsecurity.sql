@@ -20,7 +20,11 @@ insert into master.dimsecurity
 			end as iscurrent,
 		1 as batchid,
 		left(f.pts, 8)::date,
-		'9999-12-31'::date as enddate 
+		case 
+			when lead( pts ) over ( partition by symbol order by pts asc ) is null 
+			then '9999-12-31'::date  
+			else left(lead( pts ) over ( partition by symbol order by pts asc ), 8)::date 
+		end as enddate 
 	from staging.finwire_sec f,
 		staging.statustype s,
 		master.dimcompany c

@@ -31,7 +31,11 @@ insert into master.dimcompany
 	case when lead( (select batchdate from staging.batchdate) ) over ( partition by cik order by pts asc ) is null then true else false end as iscurrent,
 	1 as batchid,
 	left(f.pts, 8)::date as effectivedate,
-	'9999-12-31'::date as enddate 
+	case 
+		when lead( pts ) over ( partition by cik order by pts asc ) is null 
+		then '9999-12-31'::date  
+		else left(lead( pts ) over ( partition by cik order by pts asc ), 8)::date 
+	end as enddate 
 	from 
 		staging.finwire_cmp f, 
 		staging.statustype s,
