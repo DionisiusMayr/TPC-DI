@@ -9,6 +9,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.bash import BashOperator
 from airflow.decorators import task
+from airflow.operators.dummy_operator import DummyOperator
 from customermgmt_conversion import customermgmt_convert
 
 
@@ -29,6 +30,12 @@ dag_psql = DAG(
     #schedule = None,
     schedule_interval = None,
     # catchup = False
+)
+
+start_historical_load = BashOperator(
+    task_id = "start_historical_load",
+    bash_command = "echo 'Starting...' >> /home/workspace/times.txt && date -u --rfc-3339='seconds' >> /home/workspace/times.txt",
+    dag = dag_psql
 )
 
 create_audit_file = BashOperator(
@@ -283,16 +290,195 @@ load_master_dimessages_factmarkethistory = PostgresOperator(
     dag = dag_psql
 )
 
+finish_historical_load = BashOperator(
+    task_id = "finish_historical_load",
+    bash_command = "date -u --rfc-3339='seconds' >> /home/workspace/times.txt",
+    dag = dag_psql
+)
 
+create_schema_staging = PostgresOperator(
+    task_id = "create_schema_staging",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/create_schema_staging.sql",
+    dag = dag_psql
+)
+
+truncate_staging = PostgresOperator(
+    task_id = "truncate_staging",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/truncate_staging.sql",
+    dag = dag_psql
+)
+
+load_staging = PostgresOperator(
+    task_id = "load_staging",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/load_staging.sql",
+    dag = dag_psql
+)
+
+tl_master_dimtrade = PostgresOperator(
+    task_id = "tl_master_dimtrade",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_dimtrade.sql",
+    dag = dag_psql
+)
+
+tl_master_dimaccount = PostgresOperator(
+    task_id = "tl_master_dimaccount",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_dimaccount.sql",
+    dag = dag_psql
+)
+
+tl_master_dimcustomer = PostgresOperator(
+    task_id = "tl_master_dimcustomer",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_dimcustomer.sql",
+    dag = dag_psql
+)
+
+tl_master_factcashbalances = PostgresOperator(
+    task_id = "tl_master_factcashbalances",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factcashbalances.sql",
+    dag = dag_psql
+)
+
+tl_master_factholdings = PostgresOperator(
+    task_id = "tl_master_factholdings",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factholdings.sql",
+    dag = dag_psql
+)
+
+tl_master_factmarkethistory = PostgresOperator(
+    task_id = "tl_master_factmarkethistory",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factmarkethistory.sql",
+    dag = dag_psql
+)
+
+tl_master_factwatches = PostgresOperator(
+    task_id = "tl_master_factwatches",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factwatches.sql",
+    dag = dag_psql
+)
+
+prospect = PostgresOperator(
+    task_id = "prospect",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/prospect.sql",
+    dag = dag_psql
+)
+
+update_prospect = PostgresOperator(
+    task_id = "update_prospect",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/update_prospect.sql",
+    dag = dag_psql
+)
+
+finish_incremental_update_b2 = BashOperator(
+    task_id = "finish_incremental_update_b2",
+    bash_command = "date -u --rfc-3339='seconds' >> /home/workspace/times.txt",
+    dag = dag_psql
+)
+
+truncate_staging_b3 = PostgresOperator(
+    task_id = "truncate_staging_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/truncate_staging.sql",
+    dag = dag_psql
+)
+
+load_staging_b3 = PostgresOperator(
+    task_id = "load_staging_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/load_staging_b3.sql",
+    dag = dag_psql
+)
+
+tl_master_dimtrade_b3 = PostgresOperator(
+    task_id = "tl_master_dimtrade_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_dimtrade_b3.sql",
+    dag = dag_psql
+)
+
+tl_master_dimaccount_b3 = PostgresOperator(
+    task_id = "tl_master_dimaccount_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_dimaccount_b3.sql",
+    dag = dag_psql
+)
+
+tl_master_dimcustomer_b3 = PostgresOperator(
+    task_id = "tl_master_dimcustomer_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_dimcustomer_b3.sql",
+    dag = dag_psql
+)
+
+tl_master_factcashbalances_b3 = PostgresOperator(
+    task_id = "tl_master_factcashbalances_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factcashbalances_b3.sql",
+    dag = dag_psql
+)
+
+tl_master_factholdings_b3 = PostgresOperator(
+    task_id = "tl_master_factholdings_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factholdings_b3.sql",
+    dag = dag_psql
+)
+
+tl_master_factmarkethistory_b3 = PostgresOperator(
+    task_id = "tl_master_factmarkethistory_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factmarkethistory_b3.sql",
+    dag = dag_psql
+)
+
+tl_master_factwatches_b3 = PostgresOperator(
+    task_id = "tl_master_factwatches_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/tl_master_factwatches_b3.sql",
+    dag = dag_psql
+)
+
+prospect_b3 = PostgresOperator(
+    task_id = "prospect_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/prospect_b3.sql",
+    dag = dag_psql
+)
+
+update_prospect_b3 = PostgresOperator(
+    task_id = "update_prospect_b3",
+    postgres_conn_id = "pg_conn",
+    sql = "incremental_update/update_prospect.sql",
+    dag = dag_psql
+)
+
+finish_incremental_update_b3 = BashOperator(
+    task_id = "finish_incremental_update_b3",
+    bash_command = "date -u --rfc-3339='seconds' >> /home/workspace/times.txt && echo 'Done!' >> /home/workspace/times.txt",
+    dag = dag_psql
+)
 # Task Dependencies
 
 # Staging schema dependency
-create_audit_file >> load_audit
-create_master_schema >> load_audit
+start_historical_load >> create_audit_file
+start_historical_load >> create_staging_schema
 create_staging_schema >> load_txt_csv_sources_to_staging
 create_staging_schema >> load_finwire_to_staging >> parse_finwire
 create_staging_schema >> convert_customermgmt_xml_to_csv >> load_customer_mgmt_to_staging
 
+create_audit_file >> load_audit
+create_master_schema >> load_audit
 # Master schema dependency
 load_txt_csv_sources_to_staging >> create_master_schema
 parse_finwire >> create_master_schema
@@ -333,3 +519,35 @@ transform_load_master_financial >> transform_load_master_factmarkethistory
 transform_load_master_dimcompany >> transform_load_master_factmarkethistory
 transform_load_master_dimsecurity >> transform_load_master_factmarkethistory
 transform_load_master_factmarkethistory >> load_master_dimessages_factmarkethistory
+
+load_master_dimessages_dimtrade >> finish_historical_load
+transform_load_master_factholdings >> finish_historical_load
+load_master_dimessages_factmarkethistory >> finish_historical_load
+transform_load_master_factwatches >> finish_historical_load
+transform_load_master_factcashbalances >> finish_historical_load
+update_master_prospect >> finish_historical_load
+load_master_dimessages_dimcustomer >> finish_historical_load
+load_master_industry >> finish_historical_load
+load_audit >> finish_historical_load
+transform_load_master_dimtime >> finish_historical_load
+load_master_dimessages_dimcompany >> finish_historical_load
+
+finish_historical_load >> create_schema_staging
+create_schema_staging >> truncate_staging
+truncate_staging >> load_staging
+load_staging >> tl_master_dimcustomer >> tl_master_dimaccount >> tl_master_dimtrade
+tl_master_dimtrade >> tl_master_factholdings >> finish_incremental_update_b2
+tl_master_dimtrade >> tl_master_factmarkethistory >> finish_incremental_update_b2
+tl_master_dimtrade >> tl_master_factwatches >> finish_incremental_update_b2
+tl_master_dimtrade >> tl_master_factcashbalances >> finish_incremental_update_b2
+load_staging >> prospect >> update_prospect >> finish_incremental_update_b2
+
+finish_incremental_update_b2 >> truncate_staging_b3
+truncate_staging_b3 >> load_staging_b3
+load_staging_b3 >> tl_master_dimcustomer_b3 >> tl_master_dimaccount_b3 >> tl_master_dimtrade_b3
+tl_master_dimtrade_b3 >> tl_master_factholdings_b3 >> finish_incremental_update_b3
+tl_master_dimtrade_b3 >> tl_master_factmarkethistory_b3 >> finish_incremental_update_b3
+tl_master_dimtrade_b3 >> tl_master_factwatches_b3 >> finish_incremental_update_b3
+tl_master_dimtrade_b3 >> tl_master_factcashbalances_b3 >> finish_incremental_update_b3
+
+load_staging_b3 >> prospect_b3 >> update_prospect_b3 >> finish_incremental_update_b3
