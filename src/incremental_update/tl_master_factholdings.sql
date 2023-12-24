@@ -12,4 +12,5 @@ select
     h.hh_after_qty as currentholding,
     2 as batchid
 from staging.holdinghistory_b2 h, master.dimtrade t
-where h.hh_t_id = t.tradeid;
+where h.hh_t_id = t.tradeid
+and t.sk_closedateid is not NULL;

@@ -87,6 +87,7 @@ parse_finwire = PostgresOperator(
 convert_customermgmt_xml_to_csv = PythonOperator(
     task_id = "convert_customermgmt_xml_to_csv",
     python_callable = customermgmt_convert,
+    execution_timeout=timedelta(seconds=15*60),
     dag = dag_psql,
 )
 

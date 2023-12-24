@@ -15,6 +15,7 @@ stop:
 	docker rm AIRFLOW
 
 generate_data:
+	rm -rf ./data/sf${SCALE_FACTOR}
 	bash ./scripts/generate_data.sh ${SCALE_FACTOR}
 	chmod -R 777 ./data/sf${SCALE_FACTOR}
 
