@@ -1,21 +1,79 @@
-SELECT COUNT(*) into source_rows_count from master.prospect;
-
+with inserted_rows as(
 insert into master.prospect
+with prospect_prior as (
+    SELECT
+        agencyid,
+        batchid,
+				sk_updatedateid,
+        lastname,
+        firstname,
+        middleinitial,
+        gender,
+        addressline1,
+        addressline2,
+        postalcode,
+        city,
+        state,
+        country,
+        phone,
+        income,
+        numbercars,
+        numberchildren,
+        maritalstatus,
+        age,
+        creditrating,
+        ownorrentflag,
+        employer,
+        numbercreditcards,
+        networth
+    FROM master.prospect
+    WHERE sk_updatedateid IS NOT NULL
+),
 
-with date_record_id as (
-		select
-		dd.sk_dateid
-		from master.dimdate dd
-		inner join staging.batchdate bd
-			on dd.datevalue = bd.batchdate
-	)
+prior_date as(
+select prospect_prior.agencyid as agencyid, prospect_prior.sk_updatedateid as sk_updatedateid from
+staging.prospect as p
+inner join prospect_prior
+on prospect_prior.agencyid = p.agencyid
+and p.lastname = prospect_prior.lastname
+AND p.firstname = prospect_prior.firstname
+AND p.middleinitial = prospect_prior.middleinitial
+AND p.gender = prospect_prior.gender
+AND p.addressline1 = prospect_prior.addressline1
+AND p.addressline2 = prospect_prior.addressline2
+AND p.postalcode = prospect_prior.postalcode
+AND p.city = prospect_prior.city
+AND p.state = prospect_prior.state
+AND p.country = prospect_prior.country
+AND p.phone = prospect_prior.phone
+AND p.income = prospect_prior.income
+AND p.numbercars = prospect_prior.numbercars
+AND p.numberchildren = prospect_prior.numberchildren
+AND p.maritalstatus = prospect_prior.maritalstatus
+AND p.age = prospect_prior.age
+AND p.creditrating = prospect_prior.creditrating
+AND p.ownorrentflag = prospect_prior.ownorrentflag
+AND p.employer = prospect_prior.employer
+AND p.numbercreditcards = prospect_prior.numbercreditcards
+AND p.networth = prospect_prior.networth
+),
+
+batchdate as (
+  select sk_dateid
+  from master.dimdate
+  where datevalue = (select batchdate from staging.batchdate)
+)
 
 	select
 	  p.agencyid
-	, dri.sk_dateid
-	, dri.sk_dateid
+	, (select sk_dateid from batchdate)
+	, case
+	  when (select count(*) from prior_date where p.agencyid= prior_date.agencyid)>0
+		then (select distinct sk_updatedateid from prior_date where p.agencyid= prior_date.agencyid)
+		else (select sk_dateid from batchdate)
+		end
 	, 2 as batchid
-	, false -- temporary before dimcustomer load dependency
+	, false
 	, p.lastname
 	, p.firstname
 	, p.middleinitial
@@ -79,33 +137,6 @@ with date_record_id as (
 	  end
 	  , '+'), '')
 	from staging.prospect p
-	cross join date_record_id dri
-  on conflict (agencyid) do update
-    set
-        sk_updatedateid = EXCLUDED.sk_updatedateid,
-        batchid = EXCLUDED.batchid,
-        iscustomer = EXCLUDED.iscustomer,
-        lastname = EXCLUDED.lastname,
-        firstname = EXCLUDED.firstname,
-        middleinitial = EXCLUDED.middleinitial,
-        gender = EXCLUDED.gender,
-        addressline1 = EXCLUDED.addressline1,
-        addressline2 = EXCLUDED.addressline2,
-        postalcode = EXCLUDED.postalcode,
-        city = EXCLUDED.city,
-        state = EXCLUDED.state,
-        country = EXCLUDED.country,
-        phone = EXCLUDED.phone,
-        income = EXCLUDED.income,
-        numbercars = EXCLUDED.numbercars,
-        numberchildren = EXCLUDED.numberchildren,
-        maritalstatus = EXCLUDED.maritalstatus,
-        age = EXCLUDED.age,
-        creditrating = EXCLUDED.creditrating,
-        ownorrentflag = EXCLUDED.ownorrentflag,
-        employer = EXCLUDED.employer,
-        numbercreditcards = EXCLUDED.numbercreditcards,
-        networth = EXCLUDED.networth,
-        marketingnameplate = EXCLUDED.marketingnameplate;
+RETURNING *)
 
-RETURNING count(*) into insert_rows_count;
+select count(*) into inserted_row_counts from inserted_rows;
