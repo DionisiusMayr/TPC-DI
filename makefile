@@ -16,9 +16,9 @@ stop:
 
 generate_data:
 	bash ./scripts/generate_data.sh ${SCALE_FACTOR}
-	chmod -R 777 ./data/
+	chmod -R 777 ./data/sf${SCALE_FACTOR}
 
-historical_load:
+run:
 	docker exec AIRFLOW airflow dags unpause dw_dag
 	docker exec AIRFLOW airflow dags trigger dw_dag
 
@@ -27,9 +27,8 @@ incremental_load:
 	docker exec AIRFLOW airflow dags trigger dag_incremental_update
 
 set_scale_factor:
-	cd data/
-	rm -f sf_current
-	ln -s sf${SCALE_FACTOR} sf_current
+	echo "Scale Factor: ${SCALE_FACTOR}" >> times.txt
+	cd data/ && rm -f sf_current && ln -s sf${SCALE_FACTOR} sf_current
 
 psql:
 	docker exec -it POSTGRES psql -U postgres -d tpc_di
